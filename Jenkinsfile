@@ -36,7 +36,6 @@ pipeline {
                         exit /b 1
                     )
                     call "%SHARED_VENV%\\Scripts\\activate.bat"
-                    pip install -e .
                     python --version
                     pip --version
                 '''
@@ -107,12 +106,17 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                     bat '''
+                        if "%DOCKER_PASSWORD%"=="" (
+                            echo Docker credential password/token is empty. Check Jenkins credential: %DOCKER_CREDENTIALS_ID%.
+                            exit /b 1
+                        )
                         docker --version
-                        docker login -u "%DOCKER_USERNAME%" -p "%DOCKER_PASSWORD%"
-                        docker build -t %DOCKER_IMAGE_NAME%:%DOCKER_IMAGE_TAG% .
-                        docker push %DOCKER_IMAGE_NAME%:%DOCKER_IMAGE_TAG%
-                        docker tag %DOCKER_IMAGE_NAME%:%DOCKER_IMAGE_TAG% %DOCKER_IMAGE_NAME%:latest
-                        docker push %DOCKER_IMAGE_NAME%:latest
+                        docker info >NUL 2>&1 || (echo Docker daemon is unavailable for Jenkins service account. && exit /b 1)
+                        docker login -u "%DOCKER_USERNAME%" -p "%DOCKER_PASSWORD%" || exit /b 1
+                        docker build -t %DOCKER_IMAGE_NAME%:%DOCKER_IMAGE_TAG% . || exit /b 1
+                        docker push %DOCKER_IMAGE_NAME%:%DOCKER_IMAGE_TAG% || exit /b 1
+                        docker tag %DOCKER_IMAGE_NAME%:%DOCKER_IMAGE_TAG% %DOCKER_IMAGE_NAME%:latest || exit /b 1
+                        docker push %DOCKER_IMAGE_NAME%:latest || exit /b 1
                     '''
                 }
             }
