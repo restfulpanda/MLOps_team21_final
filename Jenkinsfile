@@ -17,6 +17,7 @@ pipeline {
         GDRIVE_CREDENTIALS_ID = 'gdrive-sa'
         // Локальный prebuilt venv на хосте Jenkins (Windows service).
         SHARED_VENV = 'C:\\Mlops_2\\venv'
+        PYTHONPATH = "${WORKSPACE}"
     }
 
     stages {
@@ -35,6 +36,7 @@ pipeline {
                         exit /b 1
                     )
                     call "%SHARED_VENV%\\Scripts\\activate.bat"
+                    pip install -e .
                     python --version
                     pip --version
                 '''
