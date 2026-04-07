@@ -47,7 +47,7 @@ pipeline {
                     steps {
                         bat '''
                             call "%SHARED_VENV%\\Scripts\\activate.bat"
-                            black src tests
+                            black --check src tests
                             mypy src tests --follow-untyped-imports
                         '''
                     }
@@ -57,7 +57,8 @@ pipeline {
                         withCredentials([file(credentialsId: "${GDRIVE_CREDENTIALS_ID}", variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
                             bat '''
                                 call "%SHARED_VENV%\\Scripts\\activate.bat"
-                                copy /Y "%GOOGLE_APPLICATION_CREDENTIALS%" "service_account.json"
+                                if not exist ".dvc" mkdir .dvc
+                                copy /Y "%GOOGLE_APPLICATION_CREDENTIALS%" ".dvc\\service_account.json"
                                 dvc pull --jobs 4
                                 pytest --maxfail=1 --disable-warnings -q tests/test_data_quality.py
                             '''
@@ -72,7 +73,8 @@ pipeline {
                 withCredentials([file(credentialsId: "${GDRIVE_CREDENTIALS_ID}", variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
                     bat '''
                         call "%SHARED_VENV%\\Scripts\\activate.bat"
-                        copy /Y "%GOOGLE_APPLICATION_CREDENTIALS%" "service_account.json"
+                        if not exist ".dvc" mkdir .dvc
+                        copy /Y "%GOOGLE_APPLICATION_CREDENTIALS%" ".dvc\\service_account.json"
                         dvc pull --jobs 4
                         python -m src.services.model_pipeline.pipeline
                     '''
@@ -90,7 +92,8 @@ pipeline {
                 withCredentials([file(credentialsId: "${GDRIVE_CREDENTIALS_ID}", variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
                     bat '''
                         call "%SHARED_VENV%\\Scripts\\activate.bat"
-                        copy /Y "%GOOGLE_APPLICATION_CREDENTIALS%" "service_account.json"
+                        if not exist ".dvc" mkdir .dvc
+                        copy /Y "%GOOGLE_APPLICATION_CREDENTIALS%" ".dvc\\service_account.json"
                         dvc pull --jobs 4
                         pytest --maxfail=1 --disable-warnings -q tests/test_endpoints.py
                     '''
