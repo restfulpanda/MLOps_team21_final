@@ -30,9 +30,9 @@ pipeline {
                 bat '''
                     python -m venv venv
                     call venv\\Scripts\\activate.bat
-                    pip install --upgrade pip
-                    pip install "dvc[gdrive]"
-                    pip install -r requirements.txt
+                    python -m pip install --upgrade pip --default-timeout=180 --retries 10
+                    python -m pip install "dvc[gdrive]" --default-timeout=180 --retries 10
+                    python -m pip install -r requirements.txt --default-timeout=180 --retries 10
                 '''
             }
         }
