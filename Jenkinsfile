@@ -15,6 +15,8 @@ pipeline {
         DOCKER_CREDENTIALS_ID = 'docker-credentials'
 
         GDRIVE_CREDENTIALS_ID = 'gdrive-sa'
+        // Локальный prebuilt venv на хосте Jenkins (Windows service).
+        SHARED_VENV = 'C:\\Mlops_2\\venv'
     }
 
     stages {
@@ -28,11 +30,13 @@ pipeline {
         stage('Setup & Cache') {
             steps {
                 bat '''
-                    python -m venv venv
-                    call venv\\Scripts\\activate.bat
-                    python -m pip install --upgrade pip --default-timeout=180 --retries 10
-                    python -m pip install "dvc[gdrive]" --default-timeout=180 --retries 10
-                    python -m pip install -r requirements.txt --default-timeout=180 --retries 10
+                    if not exist "%SHARED_VENV%\\Scripts\\activate.bat" (
+                        echo Shared venv not found: %SHARED_VENV%
+                        exit /b 1
+                    )
+                    call "%SHARED_VENV%\\Scripts\\activate.bat"
+                    python --version
+                    pip --version
                 '''
             }
         }
@@ -42,7 +46,7 @@ pipeline {
                 stage('Lint') {
                     steps {
                         bat '''
-                            call venv\\Scripts\\activate.bat
+                            call "%SHARED_VENV%\\Scripts\\activate.bat"
                             black src tests
                             mypy src tests --follow-untyped-imports
                         '''
@@ -52,7 +56,7 @@ pipeline {
                     steps {
                         withCredentials([file(credentialsId: "${GDRIVE_CREDENTIALS_ID}", variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
                             bat '''
-                                call venv\\Scripts\\activate.bat
+                                call "%SHARED_VENV%\\Scripts\\activate.bat"
                                 copy /Y "%GOOGLE_APPLICATION_CREDENTIALS%" "service_account.json"
                                 dvc pull --jobs 4
                                 pytest --maxfail=1 --disable-warnings -q tests/test_data_quality.py
@@ -67,7 +71,7 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: "${GDRIVE_CREDENTIALS_ID}", variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
                     bat '''
-                        call venv\\Scripts\\activate.bat
+                        call "%SHARED_VENV%\\Scripts\\activate.bat"
                         copy /Y "%GOOGLE_APPLICATION_CREDENTIALS%" "service_account.json"
                         dvc pull --jobs 4
                         python -m src.services.model_pipeline.pipeline
@@ -85,7 +89,7 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: "${GDRIVE_CREDENTIALS_ID}", variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
                     bat '''
-                        call venv\\Scripts\\activate.bat
+                        call "%SHARED_VENV%\\Scripts\\activate.bat"
                         copy /Y "%GOOGLE_APPLICATION_CREDENTIALS%" "service_account.json"
                         dvc pull --jobs 4
                         pytest --maxfail=1 --disable-warnings -q tests/test_endpoints.py
