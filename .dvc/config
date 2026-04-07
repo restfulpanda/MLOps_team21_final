@@ -4,3 +4,5 @@
 ['remote "myremote"']
     url = gdrive://1EJTRFPHASEjzFPHVkiiF6aAAdCEmXolv
     gdrive_use_service_account = true
+    # Relative path so Jenkins/Docker agents can use the same repo checkout.
+    gdrive_service_account_json_file_path = service_account.json

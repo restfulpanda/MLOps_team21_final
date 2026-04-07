@@ -8,9 +8,11 @@ pipeline {
     }
 
     environment {
-        DOCKER_IMAGE_NAME = 'team21/model'
+        // Docker Hub: создайте credentials в Jenkins с ID docker-credentials (username + token).
+        DOCKER_IMAGE_NAME = 'danyamki/mlops-team21'
         DOCKER_IMAGE_TAG  = "${env.BUILD_NUMBER}"
         DOCKER_REGISTRY   = 'docker.io'
+        DOCKER_CREDENTIALS_ID = 'docker-credentials'
 
         GDRIVE_CREDENTIALS_ID = 'gdrive-sa'
     }
@@ -67,8 +69,10 @@ pipeline {
                             sh '''
                                 set -e
                                 . venv/bin/activate
+                                # Put the secret JSON into repo root so DVC can use the relative path.
+                                cp "$GOOGLE_APPLICATION_CREDENTIALS" ./service_account.json
                                 dvc pull --jobs 4
-                                pytest --maxfail=1 --disable-warnings -q /tests/test_data_quality.py
+                                pytest --maxfail=1 --disable-warnings -q tests/test_data_quality.py
                             '''
                         }
                     }
@@ -85,6 +89,8 @@ pipeline {
                     sh '''
                         set -e
                         . venv/bin/activate
+                        # Put the secret JSON into repo root so DVC can use the relative path.
+                        cp "$GOOGLE_APPLICATION_CREDENTIALS" ./service_account.json
                         dvc pull --jobs 4
                         python -m src.services.model_pipeline.pipeline
                     '''
@@ -106,8 +112,10 @@ pipeline {
                     sh '''
                         set -e
                         . venv/bin/activate
+                        # Put the secret JSON into repo root so DVC can use the relative path.
+                        cp "$GOOGLE_APPLICATION_CREDENTIALS" ./service_account.json
                         dvc pull --jobs 4
-                        pytest --maxfail=1 --disable-warnings -q /tests/test_endpoints.py
+                        pytest --maxfail=1 --disable-warnings -q tests/test_endpoints.py
                     '''
                 }
             }
